@@ -1,0 +1,449 @@
+---
+- name: Install list of packages for gvm
+  apt: 
+    name: "{{ item }}" 
+    state: present
+  with_items:
+    - sudo
+    - nodejs  
+    - clang-format
+    - cmake 
+    - pkg-config 
+    - libglib2.0-dev 
+    - libgpgme-dev 
+    - libgnutls28-dev 
+    - uuid-dev 
+    - libpcap0.8-dev
+    - libssh-gcrypt-dev 
+    - libldap2-dev 
+    - doxygen 
+    - graphviz 
+    - libradcli-dev 
+    - libhiredis-dev 
+    - libpcap-dev 
+    - bison 
+    - libksba-dev 
+    - libsnmp-dev 
+    - gcc-mingw-w64 
+    - heimdal-dev 
+    - libpopt-dev 
+    - xmltoman 
+    - redis-server 
+    - xsltproc 
+    - libical-dev 
+    - postgresql 
+    - postgresql-contrib 
+    - postgresql-server-dev-all 
+    - gnutls-bin 
+    - nmap 
+    - rpm 
+    - nsis 
+    - curl 
+    - wget 
+    - fakeroot 
+    - gnupg 
+    - sshpass 
+    - socat 
+    - snmp 
+    - smbclient 
+    - libmicrohttpd-dev 
+    - libxml2-dev 
+    - python-polib 
+    - gettext 
+    - rsync 
+    - xml-twig-tools 
+    - python3-paramiko 
+    - python3-lxml 
+    - python3-defusedxml 
+    - python3-pip 
+    - python3-psutil 
+    - virtualenv 
+    - vim 
+    - git 
+    - texlive-latex-extra
+    - texlive-fonts-recommended 
+- name: copy gvm.sh
+  copy:
+    src: /etc/ansible/roles/gvm/files/gvm.sh
+    dest:  /etc/profile.d/gvm.sh
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: copy gvm.conf lib
+  copy:
+    src: /etc/ansible/roles/gvm/files/gvm.conf
+    dest:  /etc/ld.so.conf.d/gvm.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Ensure group "gvm" exists
+  group:
+    name: gvm
+    state: present
+
+- name: Add the user gvm
+  user:
+    name: gvm
+    group: gvm
+    groups: redis
+    home: /opt/gvm
+    create_home: True
+
+- name: create etc dir
+  file:
+    path: /opt/gvm/etc
+    state: directory
+    owner: gvm
+    group: gvm
+
+
+- name: create etc/openvas dir
+  file:
+    path: /opt/gvm/etc/openvas
+    state: directory
+    owner: gvm
+    group: gvm
+
+- name: create src dir
+  file:
+    path: /opt/gvm/src
+    state: directory
+    owner: gvm
+    group: gvm
+
+
+
+
+
+- name: create install-stuff dir
+  file:
+    path: /opt/gvm/install-stuff
+    state: directory
+    owner: gvm
+    group: gvm
+
+- name: git clone 'https://github.com/greenbone/gvm-libs.git'
+  git:
+    repo: 'https://github.com/greenbone/gvm-libs.git'
+    dest: /opt/gvm/src/gvm-libs
+    version: gvm-libs-11.0
+  become: yes
+  become_user: gvm  
+
+- name: git clone 'https://github.com/greenbone/openvas.git'
+  git:
+    repo: 'https://github.com/greenbone/openvas.git'
+    dest: /opt/gvm/src/openvas
+    version: openvas-7.0
+  become: yes
+  become_user: gvm  
+
+- name: check if /opt/gvm/src/gvmd/build  exist
+  stat:
+    path: /opt/gvm/src/gvmd/build
+  register: gvmd
+
+- name: git clone 'https://github.com/greenbone/gvmd.git'
+  git:
+    repo: 'https://github.com/greenbone/gvmd.git'
+    dest: /opt/gvm/src/gvmd
+    version: gvmd-9.0 
+  become: yes
+  become_user: gvm  
+  when: gvmd.stat.exists == False
+
+- name: git clone 'https://github.com/greenbone/openvas-smb.git'
+  git:
+    repo: 'https://github.com/greenbone/openvas-smb.git'
+    dest: /opt/gvm/src/openvas-smb
+    version: master
+  become: yes
+  become_user: gvm  
+
+- name: git clone 'https://github.com/greenbone/gsa.git'
+  git:
+    repo: 'https://github.com/greenbone/gsa.git'
+    dest: /opt/gvm/src/gsa
+    version: gsa-9.0 
+  become: yes
+  become_user: gvm  
+
+- name: git clone 'https://github.com/greenbone/ospd-openvas.git'
+  git:
+    repo: 'https://github.com/greenbone/ospd-openvas.git'
+    dest: /opt/gvm/src/ospd-openvas
+    version: ospd-openvas-1.0
+  become: yes
+  become_user: gvm  
+
+- name: git clone 'https://github.com/greenbone/ospd.git'
+  git:
+    repo: 'https://github.com/greenbone/ospd.git'
+    dest: /opt/gvm/src/ospd
+    version: ospd-2.0
+  become: yes
+  become_user: gvm  
+
+- name: copy install-stuff
+  copy:
+    src: /etc/ansible/roles/gvm/files/install-stuff/
+    dest:  /opt/gvm/install-stuff/
+    owner: gvm
+    group: gvm
+    mode: '0755'
+
+- name: check if /opt/gvm/lib/libgvm_base.so  exist
+  stat:
+    path: /opt/gvm/lib/libgvm_base.so 
+  register: libgvm
+
+- name: make gvm-libs 
+  command: /opt/gvm/install-stuff/build.sh
+  become: yes
+  become_user: gvm
+  args:
+    chdir:  /opt/gvm/src/gvm-libs
+  when: libgvm.stat.exists == False
+   
+
+- name: check if /opt/gvm/bin/winexe  exist
+  stat:
+    path: /opt/gvm/bin/winexe
+  register: winexe
+
+- name: make openvas-smb
+  command: /opt/gvm/install-stuff/build.sh
+  become: yes
+  become_user: gvm
+  args:
+    chdir:  /opt/gvm/src/openvas-smb
+  when: winexe.stat.exists == False
+   
+- name: check if /opt/gvm/bin/openvas-nasl exist
+  stat:
+    path: /opt/gvm/bin/openvas-nasl
+  register: openvas
+
+- name: make openvas
+  command: /opt/gvm/install-stuff/build.sh
+  become: yes
+  become_user: gvm
+  args:
+    chdir:  /opt/gvm/src/openvas
+  when: openvas.stat.exists == False
+
+- name: ldconfig
+  command: ldconfig
+
+- name: Remove redis.conf
+  file:
+    path: /etc/redis/redis.conf
+    state: absent
+
+
+- name: copy redis-openvas.conf 
+  copy:
+    src: /etc/ansible/roles/gvm/files/redis-openvas.conf
+    dest:  /etc/redis/redis-openvas.conf
+    owner: redis
+    group: redis
+    mode: '0644'
+
+
+- name: copy sudoers
+  copy:
+    src: /etc/ansible/roles/gvm/files/sudoers
+    dest:  /etc/sudoers
+    owner: root
+    group: root
+    mode: '0644'
+  notify: sysctl
+
+- name: copy sysctl.conf
+  copy:
+    src: /etc/ansible/roles/gvm/files/sysctl.conf
+    dest:  /etc/sysctl.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: sysctl
+
+- name: copy systemd service
+  copy:
+    src: /etc/ansible/roles/gvm/files/systemd/
+    dest:  /etc/systemd/system/
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: disable-thp
+  systemd:
+    name: disable-thp.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: copy openvas.conf 
+  copy:
+    src: /etc/ansible/roles/gvm/files/openvas.conf
+    dest:  /opt/gvm/etc/openvas/openvas.conf
+    owner: gvm
+    group: gvm
+    mode: '0644'
+
+- name: enable_redis-server
+  systemd:
+    name: redis-server@openvas.service
+    state: started
+    enabled: yes
+
+- name: check if  /usr/bin/npm exist
+  stat:
+    path: /usr/bin/npm
+  register: npm
+
+- name: install npm
+  command: /opt/gvm/install-stuff/npm-install
+  when: npm.stat.exists == False
+
+
+
+- name: run greenbone-nvt-sync
+  command: /opt/gvm/bin/greenbone-nvt-sync
+  become: yes
+  become_user: gvm
+
+- name: run openvas -u
+  command: /opt/gvm/sbin/openvas -u
+  #become: yes
+  #become_user: gvm
+
+
+- name: check if /opt/gvm/bin/gvm-manage-certs  exist
+  stat:
+    path: /opt/gvm/bin/gvm-manage-certs
+  register: gvmmanagecerts
+
+- name: make gvmd
+  command: /opt/gvm/install-stuff/build-gvmd.sh
+  become: yes
+  become_user: gvm
+  args:
+    chdir:  /opt/gvm/src/gvmd
+  when: gvmmanagecerts.stat.exists == False
+
+
+- name: check if /var/lib/postgres/gvmd_pg
+  stat:
+    path: /var/lib/postgres/gvmd_pg
+  register: gvmd_pg
+
+
+- name: postgres stuff
+  command: /opt/gvm/install-stuff/postgresql.sh
+  become: yes
+  become_user: postgres
+  when: gvmd_pg.stat.exists == False
+
+- name: check if /opt/gvm/var/lib/gvm/private/CA/clientkey.pem
+  stat:
+    path: /opt/gvm/var/lib/gvm/private/CA/clientkey.pem
+  register: ca
+
+- name: gvm-manage-certs -a
+  command: /opt/gvm/bin/gvm-manage-certs -a
+  become: yes
+  become_user: gvm
+  when: ca.stat.exists == False
+
+- name: admin-check.sh
+  command: /opt/gvm/install-stuff/admin-check.sh
+  become: yes
+  become_user: gvm
+
+- name: check if /opt/gvm/install-stuff/admin.exists
+  stat:
+    path:  /opt/gvm/install-stuff/admin.exists
+  register: admin
+
+- name: gvmd --create-user=admin --password=admin
+  command:  gvmd --create-user=admin --password=admin 
+  become: yes
+  become_user: gvm
+  when: admin.stat.exists == False
+
+- name: greenbone-certdata-sync
+  command: greenbone-certdata-sync
+  become: yes
+  become_user: gvm
+
+- name: greenbone-scapdata-sync
+  command: greenbone-scapdata-sync
+  become: yes
+  become_user: gvm
+
+- name: check if /opt/gvm/iana_service_ports
+  stat:
+    path:  /opt/gvm/iana_service_ports
+  register: iana
+
+- name: /opt/gvm/install-stuff/iana_service_ports.sh
+  command: /opt/gvm/install-stuff/iana_service_ports.sh
+  become: yes
+  become_user: gvm
+  args:
+    chdir:  /opt/gvm/src
+  when: iana.stat.exists == False
+
+- name: check if  /opt/gvm/var/log/gvm/gsad.log
+  stat:
+    path:   /opt/gvm/var/log/gvm/gsad.log
+  register: gsadlog
+
+- name: /opt/gvm/install-stuff/build-gsa.sh
+  command: /opt/gvm/install-stuff/build-gsa.sh
+  become: yes
+  become_user: gvm
+  args:
+    chdir:  /opt/gvm/src/gsa
+  when: gsadlog.stat.exists == False
+
+  
+- name: check if   /opt/gvm/var/run/ospd/
+  stat:
+    path:  /opt/gvm/var/run/ospd/
+  register: ospdopenvas
+
+- name: /opt/gvm/install-stuff/ospd-openvas.sh
+  command: /opt/gvm/install-stuff/ospd-openvas.sh
+  become: yes
+  become_user: gvm
+  when: ospdopenvas.stat.exists == False
+
+- name: gvmd.service 
+  systemd:
+    name: gvmd.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: gsad.service
+  systemd:
+    name: gsad.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: ospd-openvas.service 
+  systemd:
+    name: ospd-openvas.service 
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: default-scanner
+  command: /opt/gvm/install-stuff/default-scanner
+  become: yes
+  become_user: gvm

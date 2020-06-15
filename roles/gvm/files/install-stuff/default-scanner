@@ -1,0 +1,3 @@
+#!/bin/bash
+ID=$(gvmd --get-scanners | grep OpenVAS | awk '{ print $1 }')
+gvmd  --modify-scanner=$ID   of OpenVAS Default --scanner-host=/opt/gvm/var/run/ospd.sock

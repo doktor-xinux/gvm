@@ -1,0 +1,8 @@
+Defaults	env_reset
+Defaults	mail_badpass
+Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/opt/gvm/sbin"
+root	ALL=(ALL:ALL) ALL
+%sudo	ALL=(ALL:ALL) ALL
+### Allow the user running ospd-openvas, to launch openvas with root permissions
+gvm ALL = NOPASSWD: /opt/gvm/sbin/openvas
+gvm ALL = NOPASSWD: /opt/gvm/sbin/gsad

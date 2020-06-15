@@ -1,0 +1,38 @@
+---
+- name: enable_redis-server
+  systemd:
+    name: redis-server@openvas.service
+    state: started
+    enabled: yes
+
+- name: sysctl
+  command: sysctl -p
+  
+- name: disable-thp
+  systemd:
+    name: disable-thp.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+
+- name: gvmd.service 
+  systemd:
+    name: gvmd.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: gsad.service
+  systemd:
+    name: gsad.service
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: ospd-openvas.service 
+  systemd:
+    name: ospd-openvas.service 
+    state: started
+    enabled: yes
+    daemon_reload: yes
